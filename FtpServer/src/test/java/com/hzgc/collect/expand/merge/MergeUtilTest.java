@@ -24,15 +24,14 @@ public class MergeUtilTest {
     private String processDir = commonConf.getProcessLogDir();
     private String receiveDir = commonConf.getReceiveLogDir();
     private String successDir = commonConf.getSuccessLogDir();
+    private String writingLogFile = commonConf.getLogName();
 
     private String mergeErrorDir = commonConf.getMergeLogDir() + "/error";
 
-    private String processFile = processDir + "/p-0/0000000000000000010.log";
+    private String processFile = processDir + File.separator + "p-0/0000000000000000010.log";
     private String receiveFile = receiveDir + "/r-0/0000000000000000010.log";
     private String notExistFile = receiveDir + "/r-0/notExistFile.log";
     private String errorFile = processDir + "/p-0/error/error.log";
-    private String writingLogFile = "0000000000000000000.log";
-
 
     /**
      * 辅助方法，循环删除文件或者整个目录
@@ -108,14 +107,6 @@ public class MergeUtilTest {
             deleteFile(dir);
         }
         dir.mkdir();
-    }
-
-    /**
-     * 测试开始前的动作
-     */
-    @Before
-    public void initTest(){
-        createDir(testDir);
     }
 
 
