@@ -4,37 +4,119 @@ import com.hzgc.collect.expand.conf.CommonConf;
 import com.hzgc.collect.expand.log.LogEvent;
 import com.hzgc.collect.expand.util.JSONHelper;
 import org.apache.log4j.Logger;
+import org.junit.Before;
 import org.junit.Test;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.*;
+
+import static org.junit.Assert.*;
 
 public class MergeUtilTest {
 
     private MergeUtil mergeUtil = new MergeUtil();
     private Logger LOG = Logger.getLogger(MergeUtilTest.class);
+    private String testDir = "/home/test/ftp";
 
     //get log dir from CommonConf
-    private static CommonConf commonConf = new CommonConf();
-    private static String processDir = commonConf.getProcessLogDir();
-    private static String receiveDir = commonConf.getReceiveLogDir();
-    private static String mergeErrorDir = commonConf.getMergeLogDir() + "/error";
+    private CommonConf commonConf = new CommonConf();
+    private String processDir = commonConf.getProcessLogDir();
+    private String receiveDir = commonConf.getReceiveLogDir();
+    private String successDir = commonConf.getSuccessLogDir();
 
-    static String processFile = processDir + "/p-0/0000000000000000010.log";
-    static String receiveFile = receiveDir + "/r-0/0000000000000000010.log";
-    static String notExistFile = receiveDir + "/r-0/notExistFile.log";
-    static String errorFile = processDir + "/p-0/error/error.log";
-    static String writingLogFile = "0000000000000000000.log";
+    private String mergeErrorDir = commonConf.getMergeLogDir() + "/error";
 
-    static {
-        System.out.println(processFile);
-        System.out.println(receiveFile);
-        System.out.println(errorFile);
+    private String processFile = processDir + "/p-0/0000000000000000010.log";
+    private String receiveFile = receiveDir + "/r-0/0000000000000000010.log";
+    private String notExistFile = receiveDir + "/r-0/notExistFile.log";
+    private String errorFile = processDir + "/p-0/error/error.log";
+    private String writingLogFile = "0000000000000000000.log";
+
+
+    /**
+     * 辅助方法，循环删除文件或者整个目录
+     * @param path 文件或者目录
+     */
+    private void deleteFile(String path){
+        deleteFile(new File(path));
     }
 
     /**
-     * 
+     * 辅助方法，循环删除文件或者整个目录
+     * @param file 文件或者目录
      */
+    private void deleteFile(File file) {
+        if (file.exists() && file.isFile()){
+            file.delete();
+        }
+        if (file.exists() && file.isDirectory()){
+            File[] files = file.listFiles();
+            //若文件夹下无文件
+            if (files == null || files.length == 0){
+                file.delete();
+            }
+            for (int i = 0; i < files.length; i++) {
+                if (files[i].isDirectory()){
+                    deleteFile(files[i]);
+                    continue;
+                }
+                files[i].delete();
+            }
+        }
+    }
+
+    /**
+     * 辅助方法：创建文件
+     *
+     * @param path 文件的绝对路径
+     * @throws IOException
+     */
+    private void createFile(String path) throws IOException {
+        createFile(new File(path));
+    }
+
+    /**
+     * 辅助方法：创建文件
+     * @param file 文件对象
+     * @throws IOException
+     */
+    private void createFile(File file) throws IOException {
+        if (file.exists()){
+            deleteFile(file);
+        }
+        if (!file.getParentFile().exists()){
+            file.getParentFile().mkdirs();
+        }
+        file.createNewFile();
+    }
+
+    /**
+     * 创建目录
+     * @param dir 目录路径
+     */
+    private void createDir(String dir){
+        createDir(new File(dir));
+    }
+
+    /**
+     * 创建目录
+     * @param dir 目录
+     */
+    private void createDir(File dir){
+        if (dir.exists()){
+            deleteFile(dir);
+        }
+        dir.mkdir();
+    }
+
+    /**
+     * 测试开始前的动作
+     */
+    @Before
+    public void initTest(){
+        createDir(testDir);
+    }
 
 
     /**
@@ -44,12 +126,13 @@ public class MergeUtilTest {
      * 需要在JDK 1.8中才支持内部类访问本地变量不用改成final，已修改maven中配置。
      */
     @Test
-    public void listAllFileAbsPathTest(){
-        LOG.info("根据文件夹路径，获取文件夹下所有的内容：");
+    public void testListAllFileAbsPath() throws IOException {
+
+        LOG.info("根据文件夹路径，获取文件夹下所有文件的绝对路径：");
 
         //第1组测试
-        LOG.info("第1组测试：" + processDir);
-        List<String> allFileDir1 = mergeUtil.listAllFileAbsPath(processDir);
+        LOG.info("第1组测试：根据文件夹路径：" + testDir);
+        List<String> allFileDir1 = mergeUtil.listAllFileAbsPath(testDir);
         System.out.println(allFileDir1.size());
         for (String file:allFileDir1) {
             System.out.println(file);
@@ -165,23 +248,15 @@ public class MergeUtilTest {
         LOG.info("第1组测试：获取的文件数量是" + allContent.size());
 
         //第2组测试
-//        LOG.info("第2组测试，传入新的processFile：" + processFile2 +"\n" + "和receiveFile路径：" + receiveFile2);
-//        List<String> allContent2 = mergeUtil.getAllContentFromFile(processFile2, receiveFile2);
-//        for (String row:allContent2) {
-//            System.out.println(row);
-//        }
-//        LOG.info("第2组测试：获取的文件数量是" + allContent2.size());
-
-        //第3组测试
-        LOG.info("第3组测试，传入1个文件，1个文件夹：");
+        LOG.info("第2组测试，传入1个文件，1个文件夹：");
         mergeUtil.getAllContentFromFile(processFile, processDir);
 
-        //第4组测试
-        LOG.info("第4组测试，入参中有1个不存在的文件：");
+        //第3组测试
+        LOG.info("第3组测试，入参中有1个不存在的文件：");
         mergeUtil.getAllContentFromFile(processFile, notExistFile);
 
-        //第5组测试
-        LOG.info("第5组测试，传入null值：");
+        //第4组测试
+        LOG.info("第4组测试，传入null值：");
         mergeUtil.getAllContentFromFile(null, processFile);
         mergeUtil.getAllContentFromFile(null);
         mergeUtil.getAllContentFromFile("",processFile);
@@ -193,15 +268,17 @@ public class MergeUtilTest {
      * 测试结果：测试正确
      */
     @Test
-    public void deleteFileTest(){
+    public void deleteFileTest() throws IOException {
         LOG.info("循环删除目录或文件：");
-        String deleteFile1 = "D:/Test/opt/data/delete/1.log";
-        String deleteFile2 = "D:/Test/opt/data/delete/2.log";
-        String deleteFolder = "D:/Test/opt/data/delete";
+        String deleteFile1 = testDir + File.separator + "" + "test1.log";
+        createFile(deleteFile1);
+        String deleteFolder = testDir + File.separator + "" + "deleteTest";
+        createDir(deleteFolder);
 
         //第1组测试
         LOG.info("第1组测试，入参为文件：" + deleteFile1);
         mergeUtil.deleteFile(deleteFile1);
+        assertFalse("删除是否成功",new File(deleteFile1).exists());
 
         //第2组测试
         LOG.info("第2组测试，入参为空");
@@ -225,7 +302,7 @@ public class MergeUtilTest {
      */
     @Test
     public void isFileExistTest(){
-        String deleteFile1 = "D:/Test/opt/data/delete/1.log";
+        String deleteFile1 = testDir +File.separator + "delete_1.log";
         LOG.info("文件是否存在：");
         //第1组测试
         LOG.info("第1组测试，入参为文件：" + processFile);
@@ -253,7 +330,6 @@ public class MergeUtilTest {
     @Test
     public void writeMergeFileTest() throws IOException {
         LOG.info("一行一行写日志到merge的某个目录下");
-        String writingFile = "D:/Test/opt/data/process/";
 
         //第1组测试：入参为不存在的文件绝对路径
         List<String> content = mergeUtil.getAllContentFromFile(processFile);
@@ -261,12 +337,13 @@ public class MergeUtilTest {
             LogEvent event = JSONHelper.toObject(dir, LogEvent.class);
             mergeUtil.writeMergeFile(event, notExistFile);
         }
-        //
+
         //第2组测试：入参为父目录不存在的文件绝对路径
+        String notExistMergeFile = mergeErrorDir + File.separator + "error" +File.separator + "error.log";
         List<String> content2 = mergeUtil.getAllContentFromFile(processFile);
         for (String dir : content2) {
             LogEvent event = JSONHelper.toObject(dir, LogEvent.class);
-            mergeUtil.writeMergeFile(event, "D:/Test/opt/merge/error/error/error.log");
+            mergeUtil.writeMergeFile(event, notExistMergeFile);
         }
 
         //第3组测试：入参为null或空值
@@ -335,13 +412,15 @@ public class MergeUtilTest {
      * 测试正确。
      */
     @Test
-    public void moveFileTest(){
-        String moveFrom = "D:/Test/opt/merge/error/moveFrom/error.log";
-        String moveTo = "D:/Test/opt/merge/error/moveTo/error1.log";
+    public void moveFileTest() throws IOException {
+        String moveFrom = mergeErrorDir +File.separator + "moveFrom" +File.separator +"error.log";
+        String moveTo = mergeErrorDir +File.separator + "moveTo" +File.separator +"error1.log";
 
         //第1组测试
         LOG.info("第1组测试：源文件路径存在，目标文件路径不存在");
+        createFile(moveFrom);
         mergeUtil.moveFile(moveFrom, moveTo);
+        assertTrue("移动成功", new File(moveTo).exists());
 
         //第2组测试
         LOG.info("源文件路径不存在");
@@ -370,8 +449,8 @@ public class MergeUtilTest {
      */
     @Test
     public void copyFileTest() {
-        String moveFrom = "D:/Test/opt/merge/error/moveFrom/error.log";
-        String moveTo = "D:/Test/opt/merge/error/moveTo/error1.log";
+        String moveFrom = mergeErrorDir +File.separator + "moveFrom" +File.separator +"error.log";
+        String moveTo = mergeErrorDir +File.separator + "moveTo" +File.separator +"error1.log";
 
         //第1组测试
         LOG.info("第1组测试：源文件路径存在，目标文件路径存在");
@@ -513,19 +592,23 @@ public class MergeUtilTest {
      * 获取锁，处理错误日志
      */
     @Test
-    public void lockAndMoveTest(){
+    public void lockAndMoveTest() throws IOException {
+
+        String moveFrom = mergeErrorDir +File.separator + "moveFrom" +File.separator +"error.log";
+        String moveTo = mergeErrorDir +File.separator + "moveTo" +File.separator +"error1.log";
+        createFile(moveFrom);
 
         //第1组测试
         LOG.info("第1组测试：源文件路径存在，目标文件路径不存在");
-        mergeUtil.lockAndMove("E:\\Test\\from.txt","E:\\Test\\to.txt");
+        mergeUtil.lockAndMove(moveFrom,moveTo);
 
         //第2组测试
         LOG.info("第2组测试：源文件路径存在，目标文件路径不存在");
-        mergeUtil.lockAndMove("E:\\Test\\from.txt","E:\\Test\\to.txt");
+        mergeUtil.lockAndMove(moveFrom,moveTo);
         //第3组测试
         LOG.info("第3组测试：入参有一个是文件夹路径");
-        mergeUtil.lockAndMove(processDir,"E:\\Test\\to.txt");
-        mergeUtil.lockAndMove("E:\\Test\\from.txt", processDir);
+        mergeUtil.lockAndMove(processDir,moveTo);
+        mergeUtil.lockAndMove(moveFrom, processDir);
 
         //第4组测试
         LOG.info("第4组测试：入参有一个是null或空值");
@@ -534,15 +617,15 @@ public class MergeUtilTest {
 
         //第5组测试
         LOG.info("第5组测试：源文件路径存在，目标文件的父目录不存在");
-        mergeUtil.lockAndMove("E:\\Test\\from.txt", "E:\\Test\\to\\to.txt");
+        mergeUtil.lockAndMove(moveFrom, moveTo);
 
         //第6组测试
         LOG.info("第6组测试：源文件路径存在，目标文件路径存在（测试是否会覆盖目标文件）");
-        mergeUtil.lockAndMove("E:\\Test\\from.txt", "E:\\Test\\to\\to.txt");
+        mergeUtil.lockAndMove(moveFrom, moveTo);
 
         //第7组测试
         LOG.info("第7组测试：测试另外的程序在对源文件写入时，是否能移动成功");
-        mergeUtil.lockAndMove("E:\\Test\\error.log", "E:\\Test\\to.txt");
+        mergeUtil.lockAndMove(moveFrom, moveTo);
 
 
         //第8组测试：测试是否能将process目录下所有error日志再获取锁的情况下，移动到正确的success和merge目录
