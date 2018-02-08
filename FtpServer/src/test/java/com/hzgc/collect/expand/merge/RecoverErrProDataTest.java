@@ -12,6 +12,8 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
+import static org.junit.Assert.*;
+
 public class RecoverErrProDataTest {
     private MergeUtil mergeUtil = new MergeUtil();
     private Logger LOG = Logger.getLogger(RecoverErrProDataTest.class);
@@ -32,9 +34,12 @@ public class RecoverErrProDataTest {
     @Test
     public void testLockAndMove() {
 
-        LOG.info("***列出process目录下所有error日志路径***");
+        System.out.println(("***列出process目录下所有error日志路径***"));
         List<String> allErrorDir = mergeUtil.listAllErrorLogAbsPath(processLogDir);
         for (String errFile : allErrorDir) {
+            System.out.println(("************************************"));
+            System.out.println(("*********one of the error log*********"));
+            System.out.println(("************************************"));
             //获取每个error.log需要移动到的success和merge目录下的路径
             String successErrFile = mergeUtil.getSuccessFilePath(errFile);
             String mergeErrFile = mergeUtil.getMergeFilePath(errFile);
@@ -42,35 +47,20 @@ public class RecoverErrProDataTest {
             System.out.println(errFile);
             System.out.println(successErrFile);
             System.out.println(mergeErrFile);
-            System.out.println("---*---移动前，每个error.log对应的内容---*---");
             List<String> errContent1 = mergeUtil.getAllContentFromFile(errFile);
-            System.out.println("errFile：" +errFile);
-            for (String row:errContent1) {
-                System.out.println(row);
-            }
 
             LOG.info("***将process下的error日志，移动到merge和success***");
             //移动到merge后，拷贝一份到success
             mergeUtil.lockAndMove(errFile, mergeErrFile); //其中包括判断锁是否存在
             mergeUtil.copyFile(mergeErrFile, successErrFile);
             System.out.println("---*---移动后，原data/process路径下的error日志内容---*---");
+
             List<String> errContent2 = mergeUtil.getAllContentFromFile(errFile);
-            System.out.println("errFile：" +errFile);
-            for (String row:errContent2) {
-                System.out.println(row);
-            }
-            System.out.println("---*---移动后，success路径下的error日志内容---*---");
+            assertEquals("",0,errContent2.size());
             List<String> errContent3 = mergeUtil.getAllContentFromFile(mergeErrFile);
-            System.out.println("mergeErrFile：" +mergeErrFile);
-            for (String row:errContent3) {
-                System.out.println(row);
-            }
-            System.out.println("---*---移动后，merge路径下的error日志内容---*---");
             List<String> errContent4 = mergeUtil.getAllContentFromFile(successErrFile);
-            System.out.println("successErrFile：" +successErrFile);
-            for (String row:errContent4) {
-                System.out.println(row);
-            }
+
+
         }
     }
 
