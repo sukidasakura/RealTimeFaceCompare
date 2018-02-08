@@ -74,7 +74,7 @@ public class RecoverErrProDataTest {
             //获取每个error.log需要移动到的success和merge目录下的路径
             String successErrFile = mergeUtil.getSuccessFilePath(allErrorDir.get(i));
             String mergeErrFile = mergeUtil.getMergeFilePath(allErrorDir.get(i));
-            System.out.println("*************The " + i + " error.log对应的success备份路径和merge处理路径：**************");
+            System.out.println("*************第 " + i + " 个error.log对应的success备份路径和merge处理路径：**************");
             System.out.println(allErrorDir.get(i));
             System.out.println(successErrFile);
             System.out.println(mergeErrFile);
@@ -87,12 +87,11 @@ public class RecoverErrProDataTest {
 
             //移动后，每个errorFile中的内容
             List<String> errContentAfter = mergeUtil.getAllContentFromFile(allErrorDir.get(i));
-            assertEquals("移动后，原error日志是否为空：", 0, errContentAfter.size());
+            assertEquals("移动后，原error日志不为空！", 0, errContentAfter.size());
             List<String> errContentMerge = mergeUtil.getAllContentFromFile(mergeErrFile);
-            assertEquals("移动后，merge/error日志是否与原日志内容相同：", errContentBefore, errContentMerge);
+            assertEquals("移动后，merge/error日志与原日志内容不相同！", errContentBefore, errContentMerge);
             List<String> errContentSuc = mergeUtil.getAllContentFromFile(successErrFile);
-            assertEquals("移动后，success/error日志是否与原日志内容相同：", errContentBefore, errContentSuc);
-            //assertNotEquals("移动后，success/error日志与原日志", errContent1, errContent4);
+            assertEquals("移动后，success/error日志与原日志内容不相同！", errContentBefore, errContentSuc);
             System.out.println(errContentBefore);
             System.out.println(errContentAfter);
             System.out.println(errContentMerge);
@@ -101,7 +100,6 @@ public class RecoverErrProDataTest {
             //for next time test
             copyFile(backupDir + "error1.log", processLogDir + "/p-0/error/error.log");
             copyFile(backupDir + "error2.log", processLogDir + "/p-1/error/error.log");
-
         }
     }
 
@@ -115,7 +113,7 @@ public class RecoverErrProDataTest {
     public void testDealMergeError() throws IOException {
 
         System.out.println(("************************************" +
-                "testDealMergeError：测试处理merge/error的错误日志部分。" +
+                "testDealMergeError：测试处理merge/error的错误日志部分。" + "\n" +
                 "假设每个error.log的前两条发送kafka失败，看是否能够写入到merge/error下的新日志中。" +
                 "************************************"));
 
@@ -124,7 +122,7 @@ public class RecoverErrProDataTest {
             //对于每一个error.log
             for (String errorFilePath : errFilePaths) {
                 String mergeErrFileNew = errorFilePath.replace(SUFFIX, "") + "-N" + SUFFIX;
-                System.out.println("errorFile对应的新的errorFile-N：");
+                System.out.println("*****************************每个errorFile对应的新的errorFile-N：*****************************");
                 System.out.println(errorFilePath);
                 System.out.println(mergeErrFileNew);
                 List<String> errorRows = mergeUtil.getAllContentFromFile(errorFilePath);
@@ -152,7 +150,7 @@ public class RecoverErrProDataTest {
                         }
                     }
                 }
-                assertEquals("每个error.log发送失败的前两条是否都写入到新的merge/error", 2, mergeErrFileNew.length());
+                assertEquals("每个error.log发送失败的前两条没有全部写入到新的merge/error！", 2, mergeErrFileNew.length());
                 //原本error.log中的前两行，放入List中
                 List<String> errorTwo = new ArrayList<>();
                 errorTwo.add(errorRows.get(0));
@@ -160,7 +158,9 @@ public class RecoverErrProDataTest {
                 //error.log的前两行新写入的error-N，放入List中
                 List<String> mergeErrFileNewList = Files.readAllLines(Paths.get(mergeErrFileNew));
                 //比较新写入的mergeErrFileNew，是否和error.log中的前两行相同
-                assertArrayEquals("比较新写入的mergeErrFileNew，是否和error.log中的前两行相同：", errorRows.toArray(), mergeErrFileNewList.toArray());
+                assertArrayEquals("新写入的mergeErrFileNew，和原error.log中的前两行不相同！", errorRows.toArray(), mergeErrFileNewList.toArray());
+                System.out.println("原error.log：" + errorTwo);
+                System.out.println("新写入的mergeErrFileNew：" + mergeErrFileNewList);
                 mergeUtil.deleteFile(errorFilePath); //删除已处理过的error日志
             }
         } else { //若merge/error目录下无日志
