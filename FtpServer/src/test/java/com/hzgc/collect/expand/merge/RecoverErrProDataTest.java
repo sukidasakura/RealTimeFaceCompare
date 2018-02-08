@@ -8,7 +8,11 @@ import com.hzgc.collect.expand.util.JSONHelper;
 import org.apache.log4j.Logger;
 import org.junit.Test;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -34,88 +38,98 @@ public class RecoverErrProDataTest {
     @Test
     public void testLockAndMove() {
 
-        System.out.println(("***列出process目录下所有error日志路径***"));
+        System.out.println(("************************************" +
+                "testLockAndMove：将process目录下所有能获取到锁的error日志，移动到success和merge" +
+                "************************************"));
         List<String> allErrorDir = mergeUtil.listAllErrorLogAbsPath(processLogDir);
         for (String errFile : allErrorDir) {
-            System.out.println(("************************************"));
-            System.out.println(("*********one of the error log*********"));
-            System.out.println(("************************************"));
             //获取每个error.log需要移动到的success和merge目录下的路径
             String successErrFile = mergeUtil.getSuccessFilePath(errFile);
             String mergeErrFile = mergeUtil.getMergeFilePath(errFile);
-            System.out.println("---*---每个error.log对应的success备份路径和merge处理路径---*---");
+            System.out.println("每个error.log对应的success备份路径和merge处理路径：");
             System.out.println(errFile);
             System.out.println(successErrFile);
             System.out.println(mergeErrFile);
+            //移动前，每个errorFile中的内容
             List<String> errContent1 = mergeUtil.getAllContentFromFile(errFile);
 
-            LOG.info("***将process下的error日志，移动到merge和success***");
             //移动到merge后，拷贝一份到success
             mergeUtil.lockAndMove(errFile, mergeErrFile); //其中包括判断锁是否存在
             mergeUtil.copyFile(mergeErrFile, successErrFile);
-            System.out.println("---*---移动后，原data/process路径下的error日志内容---*---");
 
+            //移动后，每个errorFile中的内容
             List<String> errContent2 = mergeUtil.getAllContentFromFile(errFile);
-            assertEquals("",0,errContent2.size());
+            assertEquals("移动后，原error日志是否为空：", 0, errContent2.size());
             List<String> errContent3 = mergeUtil.getAllContentFromFile(mergeErrFile);
+            assertArrayEquals("移动后，merge/error日志是否与原日志内容相同：", errContent1.toArray(), errContent3.toArray());
             List<String> errContent4 = mergeUtil.getAllContentFromFile(successErrFile);
-
+            assertArrayEquals("移动后，success/error日志是否与原日志内容相同：", errContent1.toArray(), errContent4.toArray());
+            assertArrayEquals("测试assertArrayEquals是否能够比较两个List是否相同：", errContent1.toArray(), errContent2.toArray());
 
         }
     }
 
 
+    /**
+     * 测试处理merge/error的错误日志部分
+     * 假设每个error.log的前两条发送kafka失败，看是否能够写入到merge/error下的新日志中。
+     * 不包含发送kafka
+     */
+    public void testDealMergeError() throws IOException {
 
+        System.out.println(("************************************" +
+                "testDealMergeError：测试处理merge/error的错误日志部分。" +
+                "假设每个error.log的前两条发送kafka失败，看是否能够写入到merge/error下的新日志中。" +
+                "************************************"));
 
-    public void testOther(){
-
-        //获取merge/error下所有error日记文件的绝对路径，放入一个List中（errLogPaths）
         List<String> errFilePaths = mergeUtil.listAllFileAbsPath(mergeErrLogDir);
-        //若errLogPaths这个list不为空（merge/error下有错误日志）
-        if (errFilePaths != null && errFilePaths.size() != 0) { // V-1 if start
+        if (errFilePaths != null && errFilePaths.size() != 0) {
             //对于每一个error.log
             for (String errorFilePath : errFilePaths) {
-                //获取其中每一行数据
+                String mergeErrFileNew = errorFilePath.replace(SUFFIX, "") + "-N" + SUFFIX;
+                System.out.println("errorFile对应的新的errorFile-N：");
+                System.out.println(errorFilePath);
+                System.out.println(mergeErrFileNew);
                 List<String> errorRows = mergeUtil.getAllContentFromFile(errorFilePath);
-                //判断errorRows是否为空，若不为空，则需要处理出错数据
-                if (errorRows != null && errorRows.size() != 0) { // V-2 if start
-                    for (String row : errorRows) {
-                        //用JSONHelper将某行数据转化为LogEvent格式
-                        LogEvent event = JSONHelper.toObject(row, LogEvent.class);
-
-                        //每一条记录的格式为：
-                        //"count":0, "url":"ftp://s100:/2018/01/09", "timestamp":"2018-01-02", "status":"0"
-                        //用LogEvent获取该条数据的ftpUrl
+                if (errorRows != null && errorRows.size() != 0) {
+                    for (int i = 0; i < errorRows.size(); i++) {
+                        LogEvent event = JSONHelper.toObject(errorRows.get(i), LogEvent.class);
                         String ftpUrl = event.getPath();
-                        //获取该条数据的序列号
                         long count = event.getCount();
-                        //根据路径取得对应的图片，并提取特征，封装成FaceObject，发送Kafka
-                        FaceObject faceObject = GetFaceObject.getFaceObject(row);
-                        if (faceObject != null) { // V-3 if start
-                            SendDataToKafka sendDataToKafka = SendDataToKafka.getSendDataToKafka();
-                            sendDataToKafka.sendKafkaMessage(KafkaProducer.getFEATURE(), ftpUrl, faceObject);
-                            boolean success = sendDataToKafka.isSuccessToKafka();
 
-                            //若发送kafka不成功，将错误日志写入/merge/error/下一个新的errorN-NEW日志中
-                            String mergeErrFileNew = errorFilePath.replace(SUFFIX,"")+"-N"+SUFFIX;
-                            logEvent.setPath(ftpUrl);
-                            if (success) {
-                                logEvent.setStatus("0");
-                            } else {
-                                logEvent.setStatus("1");
-                            }
+                        //测试时，假设每个error.log的前两条发送kafka失败
+                        boolean success;
+                        if (i < 2) {
+                            success = false;
+                        } else {
+                            success = true;
+                        }
+
+                        //发送失败的前两条需要写入新的merge/error-N.log，其他的均发送成功
+                        if (!success) {
                             logEvent.setCount(count);
+                            logEvent.setPath(ftpUrl);
                             logEvent.setTimeStamp(Long.valueOf(SDF.format(new Date())));
-                            mergeUtil.writeMergeFile(event, mergeErrFileNew);
-                        } // V-3 if end：faceObject不为空的判断结束
+                            logEvent.setStatus("1");
+                            mergeUtil.writeMergeFile(logEvent, mergeErrFileNew);
+                        }
                     }
-                } // V-2 if end：errorRows为空的判断结束
-                //删除已处理过的error日志
-                mergeUtil.deleteFile(errorFilePath);
+                }
+                assertEquals("每个error.log发送失败的前两条是否都写入到新的merge/error", 2, mergeErrFileNew.length());
+                //原本error.log中的前两行，放入List中
+                List<String> errorTwo = new ArrayList<>();
+                errorTwo.add(errorRows.get(0));
+                errorTwo.add(errorRows.get(1));
+                //error.log的前两行新写入的error-N，放入List中
+                List<String> mergeErrFileNewList =Files.readAllLines(Paths.get(mergeErrFileNew));
+                //比较新写入的mergeErrFileNew，是否和error.log中的前两行相同
+                assertArrayEquals("比较新写入的mergeErrFileNew，是否和error.log中的前两行相同：",errorRows.toArray(), mergeErrFileNewList.toArray());
+                mergeUtil.deleteFile(errorFilePath); //删除已处理过的error日志
             }
-        } else { //若merge/error目录下无日志
+        }else{ //若merge/error目录下无日志
             LOG.info("Nothing in " + mergeErrLogDir);
-        } // V-1 if end：对merge/error下是否有日志的判断结束
+        }
     }
+
 
 }
