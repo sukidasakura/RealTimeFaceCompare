@@ -2,8 +2,12 @@ package com.hzgc.collect.expand.merge;
 
 import com.hzgc.collect.expand.conf.CommonConf;
 import com.hzgc.collect.expand.log.LogEvent;
+import com.hzgc.collect.expand.processer.FaceObject;
+import com.hzgc.collect.expand.util.ProducerKafka;
 import com.hzgc.collect.expand.util.JSONHelper;
-import org.apache.log4j.Logger;
+import com.hzgc.collect.expand.util.ProducerOverFtpProperHelper;
+import com.hzgc.jni.NativeFunction;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -12,18 +16,31 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import static org.junit.Assert.*;
+public class RecoverErrProDataThreadTest {
 
-public class RecoverErrProDataTest {
+    private MergeUtil mergeUtil = new MergeUtil();
+
+    private CommonConf commonConf = new CommonConf();
+    private String processLogDir = "/home/test/ftp/data/process";
+    private String mergeErrLogDir = "/home/test/ftp/merge/error";
+
+    private String SUFFIX = ".log";
+
+    private String ftpBackupDir = "/home/test/backup/ftp";
+    private String ftpDir = "/home/test/ftp";
+
+    //初始化算法
+    static {
+        NativeFunction.init();
+    }
 
 
     /**
-     * Auxiliary tools
+     * 辅助工具
      * copy file
      */
     public void copyFile(String sourceFile, String destinationFile) throws IOException {
@@ -43,7 +60,7 @@ public class RecoverErrProDataTest {
     }
 
     /**
-     * Auxiliary tools
+     * 辅助工具
      * copy Dir
      */
     private void copyDir(String fromPath, String toPath) throws IOException {
@@ -51,7 +68,7 @@ public class RecoverErrProDataTest {
     }
 
     /**
-     * Auxiliary tools
+     * 辅助工具
      * copy Dir
      */
     private void copyDir(File fromPath, File toPath) throws IOException {
@@ -75,23 +92,8 @@ public class RecoverErrProDataTest {
         }
     }
 
-
-    private Logger LOG = Logger.getLogger(RecoverErrProDataTest.class);
-    private MergeUtil mergeUtil = new MergeUtil();
-
-    //get log dir from CommonConf
-    private CommonConf commonConf = new CommonConf();
-    private String processLogDir = commonConf.getProcessLogDir();
-    private String mergeErrLogDir = commonConf.getMergeLogDir() + "/error";
-
-    private String SUFFIX = ".log";
-
-    private String ftpBackupDir = "/home/test/backup/ftp";
-    private String ftpDir = "/home/test/ftp";
-
-
     /**
-     * the action before test
+     * 测试开始前的动作
      * @throws IOException
      */
     @Before
@@ -100,17 +102,73 @@ public class RecoverErrProDataTest {
         copyDir(ftpBackupDir,ftpDir);
     }
 
+    /**
+     * 局部功能
+     * 发送kafka测试
+     */
+    @Test
+    public void testSendToKafka() {
+        MergeUtil mergeUtil = new MergeUtil();
+
+        System.out.println("processDir:" + processLogDir);
+        System.out.println("mergeErrLogDir:" + mergeErrLogDir);
+
+        List<String> allErrorDir = mergeUtil.listAllErrorLogAbsPath(processLogDir);
+        for (String errFile : allErrorDir) {
+            String successErrFile = mergeUtil.getSuccessFilePath(errFile);
+            String mergeErrFile = mergeUtil.getMergeFilePath(errFile);
+            mergeUtil.lockAndMove(errFile, mergeErrFile);
+            mergeUtil.copyFile(mergeErrFile, successErrFile);
+        }
+
+        List<String> errFilePaths = mergeUtil.listAllFileAbsPath(mergeErrLogDir);
+
+        if (errFilePaths != null && errFilePaths.size() != 0) {
+            for (String errorFilePath : errFilePaths) {
+
+                List<String> errorRows = mergeUtil.getAllContentFromFile(errorFilePath);
+                for (String row : errorRows) {
+                    System.out.println("@@@@@@@@@@errorRows = " + row);
+                }
+
+                if (errorRows != null && errorRows.size() != 0) {
+                    ProducerKafka kafkaProducer = ProducerKafka.getInstance();
+                    for (String row : errorRows) {
+                        LogEvent event = JSONHelper.toObject(row, LogEvent.class);
+                        long count = event.getCount();
+
+                        String ftpUrl = event.getFtpPath();
+                        MergeSendCallback mergeSendCallback = new MergeSendCallback(ProducerOverFtpProperHelper.getTopicFeature(), ftpUrl, event);
+                        String mergeErrFileNew = errorFilePath.replace(SUFFIX, "") + "-N" + SUFFIX;
+                        mergeSendCallback.setWriteErrFile(mergeErrFileNew);
+
+                        //根据路径取得对应的图片，并提取特征，封装成FaceObject，发送Kafka
+                        FaceObject faceObject = GetFaceObject.getFaceObject(row);
+                        if (faceObject != null) {
+                            kafkaProducer.sendKafkaMessage(ProducerOverFtpProperHelper.getTopicFeature(), ftpUrl, faceObject, mergeSendCallback);
+                        }
+                    }
+                }
+                mergeUtil.deleteFile(errorFilePath);
+            }
+        } else { //若merge/error目录下无日志
+            System.out.println("****************************Nothing in " + mergeErrLogDir + "****************************");
+        }
+    }
+
 
     /**
+     * 局部功能
      * 测试获取process下错误日志的锁，并移动到success和merge的部分。
      */
     @Test
     public void testLockAndMove() throws IOException {
 
+        String processErrorLogDir = processLogDir + "/process-0/error";
         System.out.println(("************************************" +
                 "testLockAndMove：将process目录下所有能获取到锁的error日志，移动到success和merge" +
                 "************************************"));
-        List<String> allErrorDir = mergeUtil.listAllErrorLogAbsPath(processLogDir);
+        List<String> allErrorDir = mergeUtil.listAllErrorLogAbsPath(processErrorLogDir);
         for (int i = 0; i < allErrorDir.size(); i++) {
             //获取每个error.log需要移动到的success和merge目录下的路径
             String successErrFile = mergeUtil.getSuccessFilePath(allErrorDir.get(i));
@@ -128,11 +186,11 @@ public class RecoverErrProDataTest {
 
             //移动后，每个errorFile中的内容
             List<String> errContentAfter = mergeUtil.getAllContentFromFile(allErrorDir.get(i));
-            assertEquals("移动后，原error日志不为空！", 0, errContentAfter.size());
+            Assert.assertEquals("移动后，原error日志不为空！", 0, errContentAfter.size());
             List<String> errContentMerge = mergeUtil.getAllContentFromFile(mergeErrFile);
-            assertEquals("移动后，merge/error日志与原日志内容不相同！", errContentBefore, errContentMerge);
+            Assert.assertEquals("移动后，merge/error日志与原日志内容不相同！", errContentBefore, errContentMerge);
             List<String> errContentSuc = mergeUtil.getAllContentFromFile(successErrFile);
-            assertEquals("移动后，success/error日志与原日志内容不相同！", errContentBefore, errContentSuc);
+            Assert.assertEquals("移动后，success/error日志与原日志内容不相同！", errContentBefore, errContentSuc);
             System.out.println(errContentBefore);
             System.out.println(errContentAfter);
             System.out.println(errContentMerge);
@@ -143,6 +201,7 @@ public class RecoverErrProDataTest {
 
 
     /**
+     * 局部功能
      * 测试处理merge/error的错误日志部分
      * 假设每个error.log的前两条发送kafka失败，看是否能够写入到merge/error下的新日志中。
      * 不包含发送kafka
@@ -196,22 +255,20 @@ public class RecoverErrProDataTest {
                     List<String> mergeErrFileNewList = Files.readAllLines(Paths.get(mergeErrFileNew));
                     System.out.println("新写入的error-N:" + mergeErrFileNewList);
 
-                    assertEquals("每个error.log发送失败的前两条没有全部写入到新的merge/error！", errorTwo.size(), mergeErrFileNewList.size());
+                    Assert.assertEquals("每个error.log发送失败的前两条没有全部写入到新的merge/error！", errorTwo.size(), mergeErrFileNewList.size());
 
                     //比较新写入的mergeErrFileNew，是否和error.log中的前两行相同
-                    assertEquals("新写入的mergeErrFileNew，和原error.log中的前两行不相同！", errorTwo, mergeErrFileNewList);
+                    Assert.assertEquals("新写入的mergeErrFileNew，和原error.log中的前两行不相同！", errorTwo, mergeErrFileNewList);
 
                 }
                 mergeUtil.deleteFile(errorFilePath); //删除已处理过的error日志
-                assertTrue("已处理过的error日志still exists",!new File(errorFilePath).exists());
+                Assert.assertTrue("已处理过的error日志未删除！",!new File(errorFilePath).exists());
             }
 
         } else { //若merge/error目录下无日志
-            LOG.info("Nothing in " + mergeErrLogDir);
+            System.out.println("Nothing in " + mergeErrLogDir);
         }
     }
-
-
 
 
 }

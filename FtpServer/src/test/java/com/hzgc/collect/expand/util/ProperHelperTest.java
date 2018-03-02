@@ -36,12 +36,13 @@ public class ProperHelperTest {
         FTPAddressProperHelper.getPassword();
         FTPAddressProperHelper.getPathRule();
         FTPAddressProperHelper.getProps();
+        FTPAddressProperHelper.getHostname();
     }
 
     @Test
     public void ProducerOverFtpProperHelperTest() {
         ProducerOverFtpProperHelper.getBootstrapServers();
-        ProducerOverFtpProperHelper.getClientId();
+        //ProducerOverFtpProperHelper.getClientId();
         ProducerOverFtpProperHelper.getRequestRequiredAcks();
         ProducerOverFtpProperHelper.getRetries();
         ProducerOverFtpProperHelper.getKeySerializer();
