@@ -41,7 +41,7 @@ public class UpDataToFtp {
                     //basePath FTP服务器基础目录
                     //filePath FTP服务器文件存放路径。例如分日期存放：/2015/01/01。
                     //文件的路径为 basePath + filePath
-                    FTPDownloadUtils.upLoadFromProduction("172.18.18.163", 2121, "admin",
+                    FTPDownloadUtils.upLoadFromProduction("172.18.18.163", 2222, "admin",
                             "123456", "", filePath.toString(), fileName, originFilePath);
 
                     System.out.println(filePath);
@@ -57,7 +57,7 @@ public class UpDataToFtp {
     }
 
     public static void main(String[] args) {
-        upDataTest("/home/test/picFrom",20,"DS-2DE72XYZIW-ABCVS20160823CCCH641752612");
+        upDataTest("/home/test/picFrom",1,"DS-2DE72XYZIW-ABCVS20160823CCCH641752612");
     }
 
 
