@@ -5,9 +5,8 @@ import com.hzgc.collect.expand.merge.MergeUtil;
 import com.hzgc.collect.expand.util.JSONHelper;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
+import java.util.regex.Pattern;
 
 public class EfficiencyOfFtp {
     public static void main(String[] args) {
@@ -22,15 +21,38 @@ public class EfficiencyOfFtp {
         File[] receiveFiles = receivePath.listFiles();
         List<Long> receiveTimeStamps = new ArrayList<>();
         for (int i = 0; i < receiveFiles.length ; i++) {
+            // receiveFiles[i]: receive-0
             if (receiveFiles[i].isDirectory()){
-                List<String> receiveLogAbsPath =
-                        mergeUtil.listAllFileAbsPath(receiveFiles[i].toString());
-                // content of 0000000000.log
-                List<String> receiveLogContent = mergeUtil.getAllContentFromFile(receiveLogAbsPath.get(0));
-                // first event of 000000000000.log
-                LogEvent logEvent = JSONHelper.toObject(receiveLogContent.get(0), LogEvent.class);
-                Long timeStamp = logEvent.getTimeStamp();
-                receiveTimeStamps.add(timeStamp);
+                File[] receiveLogFiles = receiveFiles[i].listFiles();
+                Map<Integer, String> fileNameMap = new HashMap<>();
+                if (receiveLogFiles != null){
+                    for(File receiveLogFile: receiveLogFiles){
+                        String filename = receiveLogFile.getName().replace(".log", "");
+                        Pattern pattern = Pattern.compile("^[-\\+]?[\\d]*$");
+                        //判断文件名是否是整数，并排除读到error/error.log的可能性
+                        if (pattern.matcher(filename).matches() && !filename.contains("error")) {
+                            int fileName = Integer.parseInt(filename);
+                            fileNameMap.put(fileName, receiveLogFile.toString());
+                        }
+                    }
+                    String minFilePath;
+                    if (receiveFiles.length > 1) {
+                        fileNameMap.remove(0000000000000000000);
+                        int minFileName = Collections.min(fileNameMap.keySet());
+                        minFilePath = fileNameMap.get(minFileName);
+                    } else {
+                        minFilePath = fileNameMap.get(0000000000000000000);
+                    }
+                    System.out.println(minFilePath);
+
+                    // content of 0000003000.log
+                    List<String> receiveLogContent = mergeUtil.getAllContentFromFile(minFilePath);
+                    // last event of 000000003000.log
+                    LogEvent logEvent = JSONHelper.toObject(receiveLogContent.get(0), LogEvent.class);
+                    Long timeStamp = logEvent.getTimeStamp();
+                    receiveTimeStamps.add(timeStamp);
+                    System.out.println(timeStamp);
+                }
             }
         }
         Long minReceiveTime = Collections.min(receiveTimeStamps);
@@ -41,17 +63,33 @@ public class EfficiencyOfFtp {
         File[] processFiles = processPath.listFiles();
         List<Long> processTimeStamps = new ArrayList<>();
         for (int i = 0; i < processFiles.length; i++) {
+            // processFiles[i]: process-0
             if (processFiles[i].isDirectory()){
-                List<String> processLogAbsPath =
-                        mergeUtil.listAllFileAbsPath(processFiles[i].toString());
-                // content of max.log
-                List<String> processLogContent =
-                        mergeUtil.getAllContentFromFile(processLogAbsPath.get(processLogAbsPath.size()-1));
-                // last event of max.log
-                LogEvent logEvent = JSONHelper.toObject(processLogContent.get(processLogContent.size()-1), LogEvent.class);
-                Long timeStamp = logEvent.getTimeStamp();
-                processTimeStamps.add(timeStamp);
-                System.out.println(timeStamp);
+                File[] processLogFiles = processFiles[i].listFiles();
+                Map<Integer, String> fileNameMap = new HashMap<>();
+                if (processLogFiles != null){
+                    for(File processLogFile: processLogFiles){
+                        String filename = processLogFile.getName().replace(".log", "");
+                        Pattern pattern = Pattern.compile("^[-\\+]?[\\d]*$");
+                        //判断文件名是否是整数，并排除读到error/error.log的可能性
+                        if (pattern.matcher(filename).matches() && !filename.contains("error")) {
+                            int fileName = Integer.parseInt(filename);
+                            fileNameMap.put(fileName, processLogFile.toString());
+                        }
+                    }
+
+                    int minFileName = Collections.min(fileNameMap.keySet());
+                    String minFilePath = fileNameMap.get(minFileName);
+                    System.out.println(minFilePath);
+
+                    // content of 00000000.log
+                    List<String> processLogContent = mergeUtil.getAllContentFromFile(minFilePath);
+                    // last event of 000000.log
+                    LogEvent logEvent = JSONHelper.toObject(processLogContent.get(processLogContent.size()-1), LogEvent.class);
+                    Long timeStamp = logEvent.getTimeStamp();
+                    processTimeStamps.add(timeStamp);
+                    System.out.println(timeStamp);
+                }
             }
         }
         Long maxProcessTime = Collections.max(processTimeStamps);
