@@ -6,23 +6,31 @@ import com.hzgc.collect.expand.util.FTPDownloadUtils;
 
 import java.io.File;
 import java.util.Random;
+import java.util.concurrent.*;
 
 public class UpDataToFtp {
+    public static void main(String[] args) {
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        pool.execute(new UpDataThread());
+
+    }
+}
+
+/**
+ * 对于本地path路径下的所有文件，循环loopNum次，发送到Ftp服务器
+ */
+class UpDataThread implements Runnable{
 
     //counter：计数器；在需要统计数据的位置调用inc()和dec()方法。
     private static MetricRegistry metricRegistry = new MetricRegistry();
     private final static Counter counter = metricRegistry.counter("counter");
 
+    String path = "/home/test/picFrom"; //图片路径
+    int loopNum = 1; //循环次数
+    String IpcId = "DS-2DE72XYZIW-ABCVS20160823CCCH641752612"; //ipcId
 
-    /**
-     *
-     * 对于本地path路径下的所有文件，循环loopNum次，发送到Ftp服务器
-     *
-     * @param path 文件路径
-     * @param loopNum 循环次数
-     * @param IpcId 设备ID
-     */
-    public static void upDataTest(String path, int loopNum, String IpcId){
+    @Override
+    public void run() {
         File file = new File(path);
         File[] tempList = file.listFiles();
         for (int i = 0; i < loopNum; i++) {
@@ -43,22 +51,10 @@ public class UpDataToFtp {
                     //文件的路径为 basePath + filePath
                     FTPDownloadUtils.upLoadFromProduction("172.18.18.163", 2222, "admin",
                             "123456", "", filePath.toString(), fileName, originFilePath);
-
-                    System.out.println(filePath);
-                    System.out.println(fileName);
-                    System.out.println(originFilePath);
-
                     counter.inc();
-                    System.out.println(counter.getCount());
                 }
             }
         }
-        System.out.println("发送到ftp的图片数量：" + counter.getCount());
+        System.out.println("Thread name is: " + Thread.currentThread().getName() + "pic count send to FTP is：" + counter.getCount());
     }
-
-    public static void main(String[] args) {
-        upDataTest("/home/test/picFrom",1,"DS-2DE72XYZIW-ABCVS20160823CCCH641752612");
-    }
-
-
 }

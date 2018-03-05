@@ -58,8 +58,5 @@ public class EfficiencyOfFtp {
         System.out.println("The max time of process Log is: " + maxProcessTime);
 
         System.out.println("FTP receive and process TIME is:" + (maxProcessTime - minReceiveTime));
-
-
-
     }
 }
