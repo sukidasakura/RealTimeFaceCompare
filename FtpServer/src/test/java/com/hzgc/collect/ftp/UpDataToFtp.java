@@ -11,7 +11,7 @@ import java.util.concurrent.*;
 public class UpDataToFtp {
     public static void main(String[] args) {
         ExecutorService pool = Executors.newFixedThreadPool(2);
-        pool.execute(new upDataThread());
+        pool.execute(new UpDataThread());
 
     }
 }
@@ -19,7 +19,7 @@ public class UpDataToFtp {
 /**
  * 对于本地path路径下的所有文件，循环loopNum次，发送到Ftp服务器
  */
-class upDataThread implements Runnable{
+class UpDataThread implements Runnable{
 
     //counter：计数器；在需要统计数据的位置调用inc()和dec()方法。
     private static MetricRegistry metricRegistry = new MetricRegistry();
