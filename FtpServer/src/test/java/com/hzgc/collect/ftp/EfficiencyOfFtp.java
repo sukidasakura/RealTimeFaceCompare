@@ -17,7 +17,7 @@ public class EfficiencyOfFtp {
         File receivePath = new File(rPath);
         File processPath = new File(pPath);
 
-        //get min time of receive Log
+        // 获取ftp接收的最早时间：3000.log的第一行
         File[] receiveFiles = receivePath.listFiles();
         List<Long> receiveTimeStamps = new ArrayList<>();
         for (int i = 0; i < receiveFiles.length ; i++) {
@@ -36,11 +36,12 @@ public class EfficiencyOfFtp {
                         }
                     }
                     String minFilePath;
+                    // 若process文件夹下除了0000.log有其他的日志
                     if (receiveFiles.length > 1) {
                         fileNameMap.remove(0000000000000000000);
                         int minFileName = Collections.min(fileNameMap.keySet());
                         minFilePath = fileNameMap.get(minFileName);
-                    } else {
+                    } else { // 若process文件夹下只有0000.log
                         minFilePath = fileNameMap.get(0000000000000000000);
                     }
                     System.out.println(minFilePath);
@@ -59,7 +60,7 @@ public class EfficiencyOfFtp {
         System.out.println("The min time of receive Log is: " + minReceiveTime);
 
 
-        //get max time of process Log
+        // 获取ftp处理的最晚时间：0000.log的最后一行
         File[] processFiles = processPath.listFiles();
         List<Long> processTimeStamps = new ArrayList<>();
         for (int i = 0; i < processFiles.length; i++) {
