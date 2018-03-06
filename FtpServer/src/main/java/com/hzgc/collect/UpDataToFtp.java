@@ -15,30 +15,26 @@ public class UpDataToFtp {
         String path = "/home/test/picFrom"; //图片路径
         String ipcId = "DS-2DE72XYZIW-ABCVS20160823CCCH641752612"; //ipcId
 
+        long startTime = System.currentTimeMillis();
         //开启threadNum个线程池来向ftp发送图片
         ExecutorService pool = Executors.newFixedThreadPool(threadNum);
-        for (int i = 0; i < threadNum ; i++) {
-            pool.execute(new UpDataThread(path, loopNum, ipcId));
+        for (int i = 0; i < threadNum; i++) {
+            UpDataThread upDataThread = new UpDataThread(path, loopNum, ipcId);
+            Thread thread = new Thread(upDataThread);
+            pool.submit(thread);
         }
+        pool.shutdown();
 
-        //关闭线程池
-        long awaitTime = 5*1000;
-        try {
-            // shutdown：平滑的关闭ExecutorService
-            // ExecutorService停止接收新的任务并且等待已经提交的任务（包含提交正在执行和提交未执行）执行完成。
-            // 当所有提交任务执行完毕，线程池即被关闭。
-            pool.shutdown();
-            if (!pool.awaitTermination(awaitTime,TimeUnit.MILLISECONDS))
-                pool.shutdownNow();
-            while (true){
-                if (pool.isTerminated()){
-                    System.out.println("The send end time is: " + System.currentTimeMillis());
-                    break;
-                }
+        while (true) {
+            if (pool.isTerminated()) {
+                long endTime = System.currentTimeMillis();
+                System.out.println("The send start time is: " + startTime);
+                System.out.println("The send end time is: " + endTime);
+                System.out.println("********************************");
+                System.out.println("The Throughput is: " + (endTime - startTime));
+                System.out.println("********************************");
+                break;
             }
-        } catch (InterruptedException e){
-            System.out.println("awaitTermination interrupted: " + e);
-            pool.shutdownNow();
         }
 
         //总共发送到ftp的图片数量
@@ -50,9 +46,9 @@ public class UpDataToFtp {
 /**
  * 对于本地path路径下的所有文件，循环loopNum次，发送到Ftp服务器
  */
-class UpDataThread implements Runnable{
+class UpDataThread implements Runnable {
     //从配置文件读取发送图片的端口号
-    UpDataToFtpProperHelper upDataToFtpProperHelper = new UpDataToFtpProperHelper();
+    private UpDataToFtpProperHelper upDataToFtpProperHelper = new UpDataToFtpProperHelper();
     private int port = upDataToFtpProperHelper.getPort();
     private String ip = upDataToFtpProperHelper.getIp();
 
@@ -61,7 +57,7 @@ class UpDataThread implements Runnable{
     private String ipcId; //ipcId
     private int count;
 
-    UpDataThread(String path, int loopNum, String ipcId){
+    UpDataThread(String path, int loopNum, String ipcId) {
         this.path = path;
         this.loopNum = loopNum;
         this.ipcId = ipcId;
@@ -75,21 +71,21 @@ class UpDataThread implements Runnable{
             Random random = new Random();
             int randNum = random.nextInt(10000000);
             String randName = String.valueOf(randNum);
-            for (int j = 0; j < ( tempList != null ? tempList.length : 0); j++) {
-                if (tempList[j].isFile()){
+            for (int j = 0; j < (tempList != null ? tempList.length : 0); j++) {
+                if (tempList[j].isFile()) {
                     String originFilePath = tempList[j].getAbsolutePath();
                     String fileName = randName + tempList[j].getName();
                     StringBuilder filePath = new StringBuilder();
                     //拼接路径
                     filePath = filePath.append(ipcId).append("/")
-                            .append(tempList[j].getName().substring(0, 14).replaceAll("_","/"));
+                            .append(tempList[j].getName().substring(0, 14).replaceAll("_", "/"));
 
                     //basePath FTP服务器基础目录
                     //filePath FTP服务器文件存放路径。例如分日期存放：/2015/01/01。
                     //文件的路径为 basePath + filePath
                     FTPDownloadUtils.upLoadFromProduction(ip, port, "admin",
                             "123456", "", filePath.toString(), fileName, originFilePath);
-                    count ++;
+                    count++;
                     System.out.println(Thread.currentThread().getName() + ", count: " + count);
                 }
             }
