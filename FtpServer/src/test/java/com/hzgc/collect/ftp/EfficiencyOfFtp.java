@@ -10,6 +10,17 @@ import java.util.regex.Pattern;
 
 public class EfficiencyOfFtp {
 
+
+    public static void main(String[] args) {
+        String receivePath = "/home/test/data/receive";
+        String processPath = "/home/test/data/process";
+
+        Long maxProcessTime = GetLastEvent(processPath);
+        Long minReceiveTime = GetFirstEvent(receivePath);
+
+        System.out.println("FTP receive and process TIME is:" + (maxProcessTime - minReceiveTime));
+    }
+
     /**
      * 获取日志中的最早时间（3000.log的第一行）
      *
@@ -110,15 +121,5 @@ public class EfficiencyOfFtp {
             System.out.println("处理日志的最晚时间：" + lastZeroTime);
         }
         return lastZeroTime;
-    }
-
-    public static void main(String[] args) {
-        String receivePath = "/home/test/data/receive";
-        String processPath = "/home/test/data/process";
-
-        Long maxProcessTime = GetLastEvent(processPath);
-        Long minReceiveTime = GetFirstEvent(receivePath);
-
-        System.out.println("FTP receive and process TIME is:" + (maxProcessTime - minReceiveTime));
     }
 }
