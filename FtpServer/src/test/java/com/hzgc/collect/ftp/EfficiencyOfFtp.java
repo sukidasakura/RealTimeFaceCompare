@@ -15,7 +15,7 @@ public class EfficiencyOfFtp {
      *
      * @param path 路径，例如/home/test/data/receive/
      */
-    private Long GetFirstEvent(String path) {
+    private static Long GetFirstEvent(String path) {
         MergeUtil mergeUtil = new MergeUtil();
         File file = new File(path);
         File[] files = file.listFiles();
@@ -70,7 +70,7 @@ public class EfficiencyOfFtp {
      *
      * @param path 路径，例如/home/test/data/receive/
      */
-    private Long GetLastEvent(String path) {
+    private static Long GetLastEvent(String path) {
         MergeUtil mergeUtil = new MergeUtil();
         File file = new File(path);
         File[] files = file.listFiles();
@@ -90,12 +90,16 @@ public class EfficiencyOfFtp {
                             logNameMap.put(logNameInt, logFile.toString());
                         }
                     }
+
                     //获取0000.log的最后一条（日志的最晚时间）
                     String zeroLogPath = logNameMap.get(0000000000000000000);
+                    System.out.println(zeroLogPath);
+
                     List<String> zeroLogContent = mergeUtil.getAllContentFromFile(zeroLogPath);
-                    LogEvent zeroLogEvent = JSONHelper.toObject(zeroLogContent.get(zeroLogContent.size()), LogEvent.class);
+                    LogEvent zeroLogEvent = JSONHelper.toObject(zeroLogContent.get(zeroLogContent.size()-1), LogEvent.class);
                     Long zeroLastTimeStamp = zeroLogEvent.getTimeStamp();
                     zeroTimeStamps.add(zeroLastTimeStamp);
+                    System.out.println(zeroLastTimeStamp);
                 }
             }
         }
@@ -108,12 +112,12 @@ public class EfficiencyOfFtp {
         return lastZeroTime;
     }
 
-    public void main(String[] args) {
+    public static void main(String[] args) {
         String receivePath = "/home/test/data/receive";
         String processPath = "/home/test/data/process";
 
-        Long maxProcessTime = this.GetLastEvent(processPath);
-        Long minReceiveTime = this.GetFirstEvent(receivePath);
+        Long maxProcessTime = GetLastEvent(processPath);
+        Long minReceiveTime = GetFirstEvent(receivePath);
 
         System.out.println("FTP receive and process TIME is:" + (maxProcessTime - minReceiveTime));
     }
