@@ -5,6 +5,7 @@ import com.hzgc.collect.expand.merge.MergeUtil;
 import com.hzgc.collect.expand.util.JSONHelper;
 
 import java.io.File;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.regex.Pattern;
 
@@ -15,10 +16,19 @@ public class EfficiencyOfFtp {
         String receivePath = "/home/test/data/receive";
         String processPath = "/home/test/data/process";
 
-        Long maxProcessTime = GetLastEvent(processPath);
         Long minReceiveTime = GetFirstEvent(receivePath);
+        Long maxProcessTime = GetLastEvent(processPath);
+//        Long maxReceiveTime = GetLastEvent(receivePath);
+//
+//        System.out.println(maxProcessTime);
+//        System.out.println(maxReceiveTime);
+
 
         System.out.println("FTP receive and process TIME is:" + (maxProcessTime - minReceiveTime));
+
+        Date date = new Date(System.currentTimeMillis());
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
     }
 
     /**
@@ -55,7 +65,7 @@ public class EfficiencyOfFtp {
                     } else { // 若process文件夹下只有0000.log
                         earliestFilePath = logNameMap.get(0000000000000000000);
                     }
-                    System.out.println(earliestFilePath);
+//                    System.out.println(earliestFilePath);
 
                     // content of 0000003000.log
                     List<String> firstLogContent = mergeUtil.getAllContentFromFile(earliestFilePath);
@@ -63,11 +73,11 @@ public class EfficiencyOfFtp {
                     LogEvent logEvent = JSONHelper.toObject(firstLogContent.get(0), LogEvent.class);
                     Long timeStamp = logEvent.getTimeStamp();
                     firstTimeStamps.add(timeStamp);
-                    System.out.println(timeStamp);
+//                    System.out.println(timeStamp);
                 }
             }
         }
-        Long earliestTime = Collections.max(firstTimeStamps);
+        Long earliestTime = Collections.min(firstTimeStamps);
         if (path.contains("receive")) {
             System.out.println("接收日志的最早时间：" + earliestTime);
         } else if (path.contains("process")) {
@@ -104,17 +114,17 @@ public class EfficiencyOfFtp {
 
                     //获取0000.log的最后一条（日志的最晚时间）
                     String zeroLogPath = logNameMap.get(0000000000000000000);
-                    System.out.println(zeroLogPath);
+//                    System.out.println(zeroLogPath);
 
                     List<String> zeroLogContent = mergeUtil.getAllContentFromFile(zeroLogPath);
                     LogEvent zeroLogEvent = JSONHelper.toObject(zeroLogContent.get(zeroLogContent.size()-1), LogEvent.class);
                     Long zeroLastTimeStamp = zeroLogEvent.getTimeStamp();
                     zeroTimeStamps.add(zeroLastTimeStamp);
-                    System.out.println(zeroLastTimeStamp);
+//                    System.out.println(zeroLastTimeStamp);
                 }
             }
         }
-        Long lastZeroTime = Collections.min(zeroTimeStamps);
+        Long lastZeroTime = Collections.max(zeroTimeStamps);
         if (path.contains("receive")) {
             System.out.println("接收日志的最晚时间：" + lastZeroTime);
         } else if (path.contains("process")) {
