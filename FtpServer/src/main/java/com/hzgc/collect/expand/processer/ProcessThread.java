@@ -3,7 +3,6 @@ package com.hzgc.collect.expand.processer;
 
 import com.hzgc.collect.expand.conf.CommonConf;
 import com.hzgc.collect.expand.log.DataProcessLogWriter;
-import com.hzgc.collect.expand.log.LogWriter;
 import com.hzgc.collect.expand.log.LogEvent;
 import com.hzgc.collect.expand.util.FtpUtils;
 import com.hzgc.collect.expand.util.ProducerKafka;
@@ -13,6 +12,10 @@ import com.hzgc.dubbo.feature.FaceAttribute;
 import com.hzgc.jni.FaceFunction;
 import org.apache.log4j.Logger;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.concurrent.BlockingQueue;
 
 public class ProcessThread implements Runnable {
@@ -30,6 +33,18 @@ public class ProcessThread implements Runnable {
         LogEvent event;
         try {
             while ((event = queue.take()) != null) {
+                // 判断图片清晰度
+                int sharpness = 1;
+                try {
+                    BufferedImage image = ImageIO.read(new FileInputStream(event.getAbsolutePath()));
+                    int imageHeight = image.getHeight();
+                    int imageWidth = image.getWidth();
+                    if (imageHeight > 80 && imageWidth > 80){
+                        sharpness = 0;
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
                 FaceAttribute attribute = FaceFunction.featureExtract(event.getAbsolutePath());
                 FtpPathMessage message = FtpUtils.getFtpPathMessage(event.getFtpPath());
                 if (attribute.getFeature() != null) {
@@ -39,7 +54,8 @@ public class ProcessThread implements Runnable {
                             , message.getDate()
                             , message.getTimeslot()
                             , attribute
-                            , event.getTimeStamp() + "");
+                            , event.getTimeStamp() + ""
+                            , sharpness);
                     ProcessCallBack callBack = new ProcessCallBack(event.getFtpPath(),
                             System.currentTimeMillis(), this.writer, event);
                     ProducerKafka.getInstance().sendKafkaMessage(

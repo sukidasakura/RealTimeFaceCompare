@@ -9,6 +9,10 @@ import com.hzgc.dubbo.dynamicrepo.SearchType;
 import com.hzgc.dubbo.feature.FaceAttribute;
 import com.hzgc.jni.FaceFunction;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -20,7 +24,7 @@ class GetFaceObject {
         if (row != null && row.length() != 0) {
             LogEvent event = JSONHelper.toObject(row, LogEvent.class);
             // 路径中不包含/opt/ftpdata
-            String path =event.getFtpPath();
+            String path = event.getFtpPath();
             // 路径中包含/opt/ftpdata/
             String absolutePath = event.getAbsolutePath();
 
@@ -34,7 +38,20 @@ class GetFaceObject {
                 String date = ftpPathMessage.getDate();
                 SearchType type = SearchType.PERSON;
                 String startTime = sdf.format(new Date());
-                faceObject = new FaceObject(ipcId, timeStamp, type, date, timeSlot, faceAttribute, startTime);
+
+                int sharpness = 1;
+                try {
+                    BufferedImage image = ImageIO.read(new FileInputStream(event.getAbsolutePath()));
+                    int imageHeight = image.getHeight();
+                    int imageWidth = image.getWidth();
+                    if (imageHeight > 80 && imageWidth>80){
+                        sharpness = 0;
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+                faceObject = new FaceObject(ipcId, timeStamp, type, date, timeSlot, faceAttribute, startTime, sharpness);
             }
         }
         return faceObject;
