@@ -46,7 +46,11 @@ public class ProcessThread implements Runnable {
                     e.printStackTrace();
                 }
                 FaceAttribute attribute = FaceFunction.featureExtract(event.getAbsolutePath());
-                FtpPathMessage message = FtpUtils.getFtpPathMessage(event.getFtpPath());
+                //根据带端口号的ftpurl：例如ftp://s120:2121/DS-2DE72XYZIW-ABCVS2016/2018/02/01/19/582_1.jpg
+                //截取到/DS-2DE72XYZIW-ABCVS2016/2018/02/01/19/582_1.jpg
+                String portPath =event.getFtpPath();
+                String path = portPath.split("://")[1].substring(portPath.split("://")[1].indexOf("/"));
+                FtpPathMessage message = FtpUtils.getFtpPathMessage(path);
                 if (attribute.getFeature() != null) {
                     FaceObject faceObject = new FaceObject(message.getIpcid()
                             , message.getTimeStamp()
