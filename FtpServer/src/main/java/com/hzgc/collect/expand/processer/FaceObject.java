@@ -33,11 +33,6 @@ public class FaceObject implements Serializable {
      * 人脸属性对象
      */
     private FaceAttribute attribute;
-    /**
-     * 清晰度评价
-     * 像素 80x80 以上的，是清晰的图，清晰为0，不清晰为1
-     */
-    private int sharpness;
 
     private String startTime;
 
@@ -47,8 +42,7 @@ public class FaceObject implements Serializable {
                       String date,
                       String timeSlot,
                       FaceAttribute attribute,
-                      String startTime,
-                      int sharpness) {
+                      String startTime) {
         this.ipcId = ipcId;
         this.timeStamp = timeStamp;
         this.type = type;
@@ -56,7 +50,6 @@ public class FaceObject implements Serializable {
         this.timeSlot = timeSlot;
         this.attribute = attribute;
         this.startTime = startTime;
-        this.sharpness = sharpness;
     }
 
     public String getIpcId() {
@@ -115,13 +108,6 @@ public class FaceObject implements Serializable {
         this.startTime = startTime;
     }
 
-    public int getSharpness() {
-        return sharpness;
-    }
-
-    public void setSharpness(int sharpness) {
-        this.sharpness = sharpness;
-    }
 
     @Override
     public String toString() {

@@ -54,8 +54,7 @@ public class ProcessThread implements Runnable {
                             , message.getDate()
                             , message.getTimeslot()
                             , attribute
-                            , event.getTimeStamp() + ""
-                            , sharpness);
+                            , event.getTimeStamp() + "");
                     ProcessCallBack callBack = new ProcessCallBack(event.getFtpPath(),
                             System.currentTimeMillis(), this.writer, event);
                     ProducerKafka.getInstance().sendKafkaMessage(

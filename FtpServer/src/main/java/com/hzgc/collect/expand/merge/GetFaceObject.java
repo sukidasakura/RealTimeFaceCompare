@@ -38,20 +38,7 @@ class GetFaceObject {
                 String date = ftpPathMessage.getDate();
                 SearchType type = SearchType.PERSON;
                 String startTime = sdf.format(new Date());
-
-                int sharpness = 1;
-                try {
-                    BufferedImage image = ImageIO.read(new FileInputStream(event.getAbsolutePath()));
-                    int imageHeight = image.getHeight();
-                    int imageWidth = image.getWidth();
-                    if (imageHeight > 80 && imageWidth>80){
-                        sharpness = 0;
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-
-                faceObject = new FaceObject(ipcId, timeStamp, type, date, timeSlot, faceAttribute, startTime, sharpness);
+                faceObject = new FaceObject(ipcId, timeStamp, type, date, timeSlot, faceAttribute, startTime);
             }
         }
         return faceObject;
