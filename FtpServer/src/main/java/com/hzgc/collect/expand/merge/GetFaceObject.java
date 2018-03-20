@@ -3,6 +3,7 @@ package com.hzgc.collect.expand.merge;
 import com.hzgc.collect.expand.log.LogEvent;
 import com.hzgc.collect.expand.processer.FaceObject;
 import com.hzgc.collect.expand.processer.FtpPathMessage;
+import com.hzgc.collect.expand.util.ClusterOverFtpProperHelper;
 import com.hzgc.collect.expand.util.JSONHelper;
 import com.hzgc.collect.expand.util.FtpUtils;
 import com.hzgc.dubbo.dynamicrepo.SearchType;
@@ -30,8 +31,10 @@ class GetFaceObject {
             String absolutePath = event.getAbsolutePath();
 
             byte[] photo = FaceFunction.getPictureBytes(absolutePath);
+            int standardWidth = ClusterOverFtpProperHelper.getResolution()[0];
+            int standardHeight = ClusterOverFtpProperHelper.getResolution()[1];
             if (photo != null) {
-                FaceAttribute faceAttribute = FaceFunction.featureExtract(photo);
+                FaceAttribute faceAttribute = FaceFunction.featureExtract(photo, standardWidth, standardHeight);
                 FtpPathMessage ftpPathMessage = FtpUtils.getFtpPathMessage(path);
                 String ipcId = ftpPathMessage.getIpcid();
                 String timeStamp = ftpPathMessage.getTimeStamp();

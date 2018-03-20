@@ -1,8 +1,6 @@
 package com.hzgc.collect.expand.util;
 
 import org.apache.log4j.Logger;
-
-
 import java.util.Objects;
 import java.util.Properties;
 import java.util.regex.Pattern;
@@ -28,8 +26,8 @@ abstract class ProperHelper {
         String returnValue = null;
         try {
             if (props.containsKey(key)) {
-                Boolean isValueEmpty = props.getProperty(key).isEmpty(); //判断键值是否为空
-                if (isValueEmpty) {
+                Boolean valueEmpty = props.getProperty(key).isEmpty(); //判断键值是否为空
+                if (valueEmpty) {
                     returnValue = defaultValue;
                     log.warn("The value of " + key + " haven't been set, set it to \"" + defaultValue + "\"");
                 } else {
@@ -91,9 +89,9 @@ abstract class ProperHelper {
         String returnValue = null;
         try {
             if (props.containsKey(key)) {
-                Boolean isValueEmpty = props.getProperty(key).isEmpty();
+                Boolean valueEmpty = props.getProperty(key).isEmpty();
 
-                if (isValueEmpty) {
+                if (valueEmpty) {
                     log.error("The value of " + key + " haven't been set,  you must set it.");
                     System.exit(1);
                 } else {
@@ -158,8 +156,8 @@ abstract class ProperHelper {
         String returnValue = null;
         try {
             if (props.containsKey(key)) {
-                Boolean isValueEmpty = props.getProperty(key).isEmpty();
-                if (isValueEmpty) {
+                Boolean valueEmpty = props.getProperty(key).isEmpty();
+                if (valueEmpty) {
                     log.error("The value of " + key + " haven't been set,  you must set it.");
                     System.exit(1);
                 } else {
@@ -213,10 +211,10 @@ abstract class ProperHelper {
         String returnPort = null;
         try {
             if (props.containsKey(portKey)) {
-                Boolean isValueEmpty = props.getProperty(portKey).isEmpty(); //判断键值是否为空
+                Boolean valueEmpty = props.getProperty(portKey).isEmpty(); //判断键值是否为空
 
                 //若端口号未设置，设置为默认值
-                if (isValueEmpty) {
+                if (valueEmpty) {
                     returnPort = portDefault;
                     log.warn("The value of " + portKey + " haven't been set, set it to \"" + portDefault + "\"");
                 } else {
@@ -267,8 +265,8 @@ abstract class ProperHelper {
         String returnValue = null;
         try {
             if (props.containsKey(key)) {
-                Boolean isValueEmpty = props.getProperty(key).isEmpty(); //判断键值是否为空
-                if (isValueEmpty) {
+                Boolean valueEmpty = props.getProperty(key).isEmpty(); //判断键值是否为空
+                if (valueEmpty) {
                     returnValue = defaultValue;
                     log.warn("The value of " + key + " haven't been set, set it to \"" + defaultValue + "\"");
                 } else {
@@ -310,9 +308,9 @@ abstract class ProperHelper {
         String returnValue = null;
         try {
             if (props.containsKey(key)) {
-                Boolean isValueEmpty = props.getProperty(key).isEmpty();
+                Boolean valueEmpty = props.getProperty(key).isEmpty();
                 //若未设置，设置为默认值
-                if (isValueEmpty) {
+                if (valueEmpty) {
                     log.warn("The value of " + key + " haven't been set, set it to \"" + defaultValue + "\"");
                     returnValue = defaultValue;
                 } else {
@@ -361,9 +359,9 @@ abstract class ProperHelper {
         String returnValue = null;
         try {
             if (props.containsKey(key)) {
-                Boolean isValueEmpty = props.getProperty(key).isEmpty();
+                Boolean valueEmpty = props.getProperty(key).isEmpty();
                 //若未设置，设置为默认值
-                if (isValueEmpty) {
+                if (valueEmpty) {
                     log.warn("The value of " + key + " haven't been set, set it to \"" + defaultValue + "\"");
                     returnValue = defaultValue;
                 } else {
@@ -391,6 +389,38 @@ abstract class ProperHelper {
         return returnValue;
     }
 
+    static int[] verifyResolutionValue(String key, String defaultValue, Properties props, Logger log){
+        int defaultWidth = Integer.parseInt(defaultValue.split("x")[0]);
+        int defaultHeight = Integer.parseInt(defaultValue.split("x")[1]);
+        int[] resolution = new int[2];
+        if (props.containsKey(key)){
+            Boolean valueEmpty = props.getProperty(key).isEmpty();
+            // 若未设置，设置为默认值
+            if (valueEmpty){
+                log.warn("The value of " + key + " haven't been set, set it to \"" + defaultValue + "\"");
+                resolution[0] = defaultWidth;
+                resolution[1] = defaultHeight;
+            } else {
+                String valueFromKey = props.getProperty(key);
+                if (valueFromKey == null || Objects.equals(valueFromKey, "")) {
+                    log.warn("The value of " + key + " haven't been set, set it to \"" + defaultValue + "\"");
+                    resolution[0] = defaultWidth;
+                    resolution[1] = defaultHeight;
+                } else { //值符合条件，加载
+                    log.info("The configuration " + key + " is right, the value is \"" + valueFromKey + "\"");
+                    int width = Integer.parseInt(valueFromKey.split("x")[0]);
+                    int height = Integer.parseInt(valueFromKey.split("x")[1]);
+                    resolution[0] = width;
+                    resolution[1] = height;
+                }
+            }
+        }
+        else {
+            log.warn("The key " + key + " does not exist in the configuration file, please check it.");
+        }
+        return resolution;
+    }
+
     /**
      * 判断字符串表示的值是否是整数。
      *
@@ -402,5 +432,4 @@ abstract class ProperHelper {
         //判断是否是整数
         return pattern.matcher(value).matches();
     }
-
 }

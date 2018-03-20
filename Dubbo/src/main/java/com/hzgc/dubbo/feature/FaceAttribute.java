@@ -38,8 +38,7 @@ public class FaceAttribute implements Serializable{
      */
     private int eyeglasses;
     /**
-     * 清晰度评价
-     * 像素 80x80 以上的，是清晰的图，清晰为0，不清晰为1
+     * 清晰度评价。清晰为0，不清晰为1
      */
     private int sharpness;
 

@@ -4,6 +4,7 @@ package com.hzgc.collect.expand.processer;
 import com.hzgc.collect.expand.conf.CommonConf;
 import com.hzgc.collect.expand.log.DataProcessLogWriter;
 import com.hzgc.collect.expand.log.LogEvent;
+import com.hzgc.collect.expand.util.ClusterOverFtpProperHelper;
 import com.hzgc.collect.expand.util.FtpUtils;
 import com.hzgc.collect.expand.util.ProducerKafka;
 import com.hzgc.collect.expand.util.ProducerOverFtpProperHelper;
@@ -33,22 +34,14 @@ public class ProcessThread implements Runnable {
         LogEvent event;
         try {
             while ((event = queue.take()) != null) {
-                // 判断图片清晰度
-                int sharpness = 1;
-                try {
-                    BufferedImage image = ImageIO.read(new FileInputStream(event.getAbsolutePath()));
-                    int imageHeight = image.getHeight();
-                    int imageWidth = image.getWidth();
-                    if (imageHeight > 80 && imageWidth > 80){
-                        sharpness = 0;
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                FaceAttribute attribute = FaceFunction.featureExtract(event.getAbsolutePath());
+                byte[] photo = FaceFunction.getPictureBytes(event.getAbsolutePath());
+                // 获取清晰度评价标准
+                int standardWidth = ClusterOverFtpProperHelper.getResolution()[0];
+                int standardHeight = ClusterOverFtpProperHelper.getResolution()[1];
+                FaceAttribute attribute = FaceFunction.featureExtract(photo, standardWidth, standardHeight);
                 //根据带端口号的ftpurl：例如ftp://s120:2121/DS-2DE72XYZIW-ABCVS2016/2018/02/01/19/582_1.jpg
                 //截取到/DS-2DE72XYZIW-ABCVS2016/2018/02/01/19/582_1.jpg
-                String portPath =event.getFtpPath();
+                String portPath = event.getFtpPath();
                 String path = portPath.split("://")[1].substring(portPath.split("://")[1].indexOf("/"));
                 FtpPathMessage message = FtpUtils.getFtpPathMessage(path);
                 if (attribute.getFeature() != null) {

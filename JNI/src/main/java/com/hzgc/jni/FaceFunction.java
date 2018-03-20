@@ -1,7 +1,6 @@
 package com.hzgc.jni;
 
 import com.hzgc.dubbo.feature.FaceAttribute;
-
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.*;
@@ -39,6 +38,56 @@ public class FaceFunction {
      * 特征提取方法 （内）（赵喆）
      *
      * @param imageData 将图片转为字节数组传入
+     * @param standardWidth 图片标准宽度，用于清晰度评价
+     * @param standardHeight 图片标准高度，用于清晰度评价
+     * @return 输出float[]形式的特征值
+     */
+    public static FaceAttribute featureExtract(byte[] imageData, int standardWidth, int standardHeight) {
+        BufferedImage faceImage;
+        try {
+            if (null != imageData) {
+                FaceAttribute faceAttribute = new FaceAttribute();
+                int successOrfailue;
+                faceImage = ImageIO.read(new ByteArrayInputStream(imageData));
+                int height = faceImage.getHeight();
+                int width = faceImage.getWidth();
+
+                // 判断图片清晰度，0为清晰，1为不清晰
+                if (height > standardHeight && width > standardWidth) {
+                    faceAttribute.setSharpness(0);
+                } else {
+                    faceAttribute.setSharpness(1);
+                }
+
+                int[] rgbArray = new int[height * width * 3];
+                for (int h = 0; h < height; h++) {
+                    for (int w = 0; w < width; w++) {
+                        int pixel = faceImage.getRGB(w, h);//RGB颜色模型
+                        rgbArray[h * width * 3 + w * 3] = (pixel & 0xff0000) >> 16;//0xff0000 红色
+                        rgbArray[h * width * 3 + w * 3 + 1] = (pixel & 0xff00) >> 8;
+                        rgbArray[h * width * 3 + w * 3 + 2] = (pixel & 0xff);
+                    }
+                }
+                successOrfailue = NativeFunction.feature_extract(faceAttribute, rgbArray, width, height);
+                if (successOrfailue == 0) {
+                    return faceAttribute;
+                } else {
+                    return new FaceAttribute();
+                }
+            } else {
+                throw new NullPointerException("The data of picture is null");
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return new FaceAttribute();
+    }
+
+    /**
+     * 特征提取方法 （内）（赵喆）
+     * 调用该方法时，默认图片是清晰的
+     *
+     * @param imageData 将图片转为字节数组传入
      * @return 输出float[]形式的特征值
      */
     public static FaceAttribute featureExtract(byte[] imageData) {
@@ -50,14 +99,8 @@ public class FaceFunction {
                 faceImage = ImageIO.read(new ByteArrayInputStream(imageData));
                 int height = faceImage.getHeight();
                 int width = faceImage.getWidth();
-
-                // 判断图片清晰度，0为清晰，1为不清晰
-                if (height > 80 && width > 80) {
-                    faceAttribute.setSharpness(0);
-                } else {
-                    faceAttribute.setSharpness(1);
-                }
-
+                // 默认图片是清晰的
+                faceAttribute.setSharpness(0);
                 int[] rgbArray = new int[height * width * 3];
                 for (int h = 0; h < height; h++) {
                     for (int w = 0; w < width; w++) {

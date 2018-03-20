@@ -29,6 +29,7 @@ public class ClusterOverFtpProperHelper extends ProperHelper {
     private static String port;
     private static String dataPorts;
     private static String implicitSsl;
+    private static int[] resolution;
 
     static {
         String properName = "cluster-over-ftp.properties";
@@ -52,6 +53,7 @@ public class ClusterOverFtpProperHelper extends ProperHelper {
                 setPort();
                 setDataPorts();
                 setImplicitSsl();
+                setResolution();
             } else {
                 LOG.error("The property file " + properName + "doesn't exist!");
                 System.exit(1);
@@ -122,6 +124,9 @@ public class ClusterOverFtpProperHelper extends ProperHelper {
         faceDetectorNumber = verifyPositiveIntegerValue("face.detector.number","", props, LOG);
     }
 
+    private static void setResolution() {
+        resolution = verifyResolutionValue("resolution", "80x80", props, LOG);
+    }
 
     /**
      * get方法。提供获取配置文件中的值的方法。
@@ -173,6 +178,10 @@ public class ClusterOverFtpProperHelper extends ProperHelper {
 
     public static Integer getFaceDetectorNumber() {
         return Integer.valueOf(faceDetectorNumber);
+    }
+
+    public static int[] getResolution(){
+        return resolution;
     }
 
 

@@ -26,6 +26,8 @@ public class ProperHelperTest {
         ClusterOverFtpProperHelper.getFaceDetectorNumber();
         ClusterOverFtpProperHelper.getLogSize();
         ClusterOverFtpProperHelper.getReceiveQueueCapacity();
+        System.out.println(ClusterOverFtpProperHelper.getResolution()[0]);
+        System.out.println(ClusterOverFtpProperHelper.getResolution()[1]);
     }
 
     @Test
