@@ -14,11 +14,19 @@
                 <include>README.md</include>
             </includes>
         </fileSet>
+        <!--项目部署文档 -->
+        <fileSet>
+            <directory>../Distribution/src/resources</directory>
+            <includes>
+                <include>Product-Deployment-Documentation.docx</include>
+            </includes>
+            <outputDirectory>\</outputDirectory>
+        </fileSet>
         <!--项目source文件-->
         <fileSet>
             <directory>../Distribution/bin</directory>
             <includes>
-                <include>env_RealTimeCompare.sh</include>
+                <include>env_realTimeFaceCompare.sh</include>
             </includes>
             <outputDirectory>\</outputDirectory>
         </fileSet>
@@ -58,7 +66,7 @@
                 <include>**</include>
             </includes>
             <excludes>
-                <exclude>env_RealTimeCompare.sh</exclude>
+                <exclude>env_realTimeFaceCompare.sh</exclude>
             </excludes>
             <fileMode>0755</fileMode>
             <outputDirectory>common/bin</outputDirectory>
@@ -117,7 +125,7 @@
         <fileSet>
             <directory>../Distribution/src/resources</directory>
             <includes>
-                <include>**</include>
+                <include>*.properties</include>
             </includes>
             <outputDirectory>common/conf</outputDirectory>
         </fileSet>
