@@ -35,6 +35,9 @@ curl -XPUT 's109:9200/dynamic?pretty' -H 'Content-Type: application/json' -d'
                     "ftpurl" : {
                                           "type" : "text"
                               },
+							  "sharpness" : {
+                                           "type" : "long"
+                               },
                               "eyeglasses" : {
                                            "type" : "long"
                                },
